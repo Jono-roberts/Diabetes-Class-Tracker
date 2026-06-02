@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Diabetes Class">
+<title>Diabetes Class Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --teal:#0F6E56;--teal-light:#E1F5EE;--teal-mid:#1D9E75;
+    --text:#1a1a1a;--text2:#555;--text3:#999;
+    --border:#ddd;--border2:#e8e8e8;
+    --bg:#f7f8f6;--white:#ffffff;--surface:#f0f4f2;
+    --danger:#c0392b;--danger-bg:#fdf0ef;
+    --radius:10px;--radius-sm:6px;
+    --shadow:0 1px 3px rgba(0,0,0,0.08);
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+  /* ── TOP NAV ── */
+  .nav{background:var(--teal);color:#fff;padding:0;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;max-width:1400px;margin:0 auto}
+  .nav-title{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+  .nav-sub{font-size:12px;opacity:0.75;margin-top:1px}
+  .nav-btns{display:flex;gap:8px}
+  .nav-btn{background:rgba(255,255,255,0.18);border:none;color:#fff;padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.15s}
+  .nav-btn:active{background:rgba(255,255,255,0.3)}
+  .nav-btn.accent{background:#fff;color:var(--teal);font-weight:600}
+  .nav-btn.accent:active{background:#e8f5f0}
+
+  /* ── VIEWS ── */
+  .view{display:none;max-width:1400px;margin:0 auto;padding:16px}
+  .view.active{display:block}
+
+  /* ── FOLDER SCREEN ── */
+  .folder-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .folder-header h2{font-size:20px;font-weight:600;color:var(--text)}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);border:none;font-size:14px;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s}
+  .btn:active{opacity:0.8;transform:scale(0.98)}
+  .btn-primary{background:var(--teal);color:#fff}
+  .btn-ghost{background:var(--white);color:var(--text);border:1px solid var(--border)}
+  .btn-danger{background:var(--danger-bg);color:var(--danger);border:1px solid #f5c6c2}
+  .btn-sm{padding:6px 12px;font-size:13px}
+
+  .folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+  .folder-card{background:var(--white);border:1px solid var(--border2);border-radius:var(--radius);padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s;box-shadow:var(--shadow)}
+  .folder-card:active{transform:scale(0.97);box-shadow:none}
+  .folder-card .fc-icon{width:44px;height:44px;background:var(--teal-light);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:22px}
+  .folder-card .fc-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px;word-break:break-word}
+  .folder-card .fc-meta{font-size:12px;color:var(--text3)}
+  .folder-card .fc-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2)}
+  .fc-btn{flex:1;padding:6px;border-radius:var(--radius-sm);border:none;font-size:12px;font-weight:500;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .fc-btn.open{background:var(--teal-light);color:var(--teal)}
+  .fc-btn.del{background:var(--danger-bg);color:var(--danger)}
+  .empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
+  .empty-state .es-icon{font-size:48px;margin-bottom:12px}
+  .empty-state p{font-size:15px;margin-bottom:6px;color:var(--text2)}
+  .empty-state small{font-size:13px}
+
+  /* ── SHEET LIST inside folder ── */
+  .back-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .back-btn{background:none;border:none;color:var(--teal);font-size:15px;font-weight:500;cursor:pointer;padding:4px 0;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:4px}
+  .sheet-list{display:flex;flex-direction:column;gap:8px}
+  .sheet-item{background:var(--white);border:1px solid var(--border2);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+  .si-info .si-name{font-size:15px;font-weight:500;color:var(--text)}
+  .si-info .si-meta{font-size:12px;color:var(--text3);margin-top:2px}
+  .si-actions{display:flex;gap:6px}
+
+  /* ── TABLE SCREEN ── */
+  .sheet-topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap}
+  .sheet-title-area .st-folder{font-size:12px;color:var(--teal);font-weight:500;margin-bottom:2px}
+  .sheet-title-area .st-name{font-size:18px;font-weight:600;color:var(--text)}
+  .sheet-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  .table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;font-size:13px;min-width:1200px;width:100%}
+  thead tr:first-child th{background:var(--teal);color:#fff;padding:9px 6px;text-align:center;font-weight:600;font-size:13px;white-space:nowrap}
+  thead tr:first-child th.th-left{text-align:left}
+  thead tr:nth-child(2) th{background:#e8f3f0;color:var(--teal);padding:6px 4px;text-align:center;font-weight:500;font-size:11px;border-bottom:2px solid var(--border)}
+  thead tr:nth-child(2) th.th-left{text-align:left}
+  td{padding:4px 3px;border-bottom:1px solid var(--border2);vertical-align:middle;background:var(--white)}
+  tr:nth-child(even) td{background:#fafcfb}
+  tr:last-child td{border-bottom:none}
+  td.rnum{text-align:center;color:var(--text3);font-size:11px;width:26px;padding:4px 2px}
+  td input{width:100%;border:none;background:transparent;font-size:13px;color:var(--text);font-family:inherit;text-align:center;padding:5px 3px;outline:none;border-radius:4px;min-height:32px;-webkit-appearance:none}
+  td input.inp-left{text-align:left}
+  td input:focus{background:#e1f5ee;box-shadow:inset 0 0 0 1.5px var(--teal-mid)}
+  .sep-left{border-left:2px solid var(--border) !important}
+  .th-sep{border-left:2px solid rgba(255,255,255,0.3) !important}
+  .th-sep2{border-left:2px solid #c5ddd8 !important}
+
+  .table-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px}
+  .status-msg{font-size:13px;color:var(--teal);font-weight:500;min-height:20px}
+
+  /* ── MODAL ── */
+  .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:200;align-items:flex-end;justify-content:center}
+  .modal-overlay.open{display:flex}
+  @media(min-width:600px){.modal-overlay{align-items:center}}
+  .modal{background:var(--white);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px}
+  @media(min-width:600px){.modal{border-radius:var(--radius);max-width:400px}}
+  .modal h3{font-size:17px;font-weight:600;margin-bottom:14px;color:var(--text)}
+  .modal label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px;margin-top:10px}
+  .modal input[type=text],.modal select{width:100%;font-size:15px;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;color:var(--text);background:var(--white);outline:none;-webkit-appearance:none}
+  .modal input:focus,.modal select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,110,86,0.12)}
+  .modal-btns{display:flex;gap:8px;margin-top:16px}
+  .modal-btns .btn{flex:1;justify-content:center}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div>
+      <div class="nav-title">🩺 Diabetes Class Tracker</div>
+      <div class="nav-sub" id="navSub">Select a group to begin</div>
+    </div>
+    <div class="nav-btns" id="navBtns">
+      <button class="nav-btn accent" onclick="showNewFolderModal()">+ New Group</button>
+    </div>
+  </div>
+</nav>
+
+<!-- VIEW: FOLDER LIST -->
+<div class="view active" id="viewFolders">
+  <div class="folder-header">
+    <h2>Groups</h2>
+    <button class="btn btn-primary" onclick="showNewFolderModal()">+ New Group</button>
+  </div>
+  <div class="folder-grid" id="folderGrid"></div>
+</div>
+
+<!-- VIEW: SHEET LIST inside a folder -->
+<div class="view" id="viewSheets">
+  <div class="back-bar">
+    <button class="back-btn" onclick="goFolders()">&#8592; All Groups</button>
+  </div>
+  <div class="folder-header">
+    <h2 id="sheetsTitle">Group Name</h2>
+    <button class="btn btn-primary" onclick="newSheet()">+ New Sheet</button>
+  </div>
+  <div class="sheet-list" id="sheetList"></div>
+</div>
+
+<!-- VIEW: SHEET TABLE -->
+<div class="view" id="viewTable">
+  <div class="sheet-topbar">
+    <div class="sheet-title-area">
+      <div class="st-folder" id="tblFolderName"></div>
+      <div class="st-name" id="tblSheetName">Sheet Name</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost btn-sm" onclick="goSheets()">&#8592; Back</button>
+      <button class="btn btn-ghost btn-sm" onclick="addRow()">+ Row</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSheet()">&#10003; Save</button>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th style="width:26px"></th>
+          <th class="th-left" style="min-width:130px;text-align:left">Name</th>
+          <th class="th-left" style="min-width:110px;text-align:left">GP</th>
+          <th style="min-width:95px">Referral Date</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 1</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 2</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 3</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 4</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 5</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 6</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 7</th>
+          <th class="th-sep" colspan="2" style="min-width:110px">Session 8</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th class="th-left" style="text-align:left"></th>
+          <th class="th-left" style="text-align:left"></th>
+          <th></th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+          <th class="th-sep2" style="min-width:55px">Date</th><th style="min-width:55px">FBG</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="addRow()">+ Add participant</button>
+      <button class="btn btn-danger btn-sm" onclick="removeRow()">− Remove last</button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+</div>
+
+<!-- MODAL: New Folder -->
+<div class="modal-overlay" id="modalFolder">
+  <div class="modal">
+    <h3>New Group</h3>
+    <label>Group name (e.g. "2024 Cohort", "Tuesday Class")</label>
+    <input type="text" id="folderNameInput" placeholder="Group name" />
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modalFolder')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmNewFolder()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: New Sheet -->
+<div class="modal-overlay" id="modalSheet">
+  <div class="modal">
+    <h3>New Sheet</h3>
+    <label>Sheet name (e.g. "Week 1 — June 2025")</label>
+    <input type="text" id="sheetNameInput" placeholder="Sheet name" />
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modalSheet')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmNewSheet()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STORAGE ──
+const KEY = 'dtracker_v1';
+function db(d){
+  if(d===undefined){try{return JSON.parse(localStorage.getItem(KEY)||'{folders:{},sheets:{}}')}catch(e){return{folders:{},sheets:{}}}}
+  localStorage.setItem(KEY,JSON.stringify(d));
+}
+function ensureDb(){const d=db();if(!d.folders)d.folders={};if(!d.sheets)d.sheets={};return d;}
+
+// ── STATE ──
+let curFolderId=null, curSheetId=null;
+
+// ── ESCAPE ──
+function esc(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ── VIEWS ──
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── FOLDERS ──
+function goFolders(){
+  curFolderId=null; curSheetId=null;
+  document.getElementById('navSub').textContent='Select a group to begin';
+  document.getElementById('navBtns').innerHTML='<button class="nav-btn accent" onclick="showNewFolderModal()">+ New Group</button>';
+  renderFolders();
+  showView('viewFolders');
+}
+
+function renderFolders(){
+  const d=ensureDb();
+  const grid=document.getElementById('folderGrid');
+  const keys=Object.keys(d.folders).sort((a,b)=>d.folders[b].createdAt.localeCompare(d.folders[a].createdAt));
+  if(!keys.length){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="es-icon">📂</div><p>No groups yet</p><small>Create a group to organise your class sheets — e.g. "Tuesday Class" or "2025 Cohort"</small></div>`;
+    return;
+  }
+  grid.innerHTML=keys.map(id=>{
+    const f=d.folders[id];
+    const sheetCount=Object.values(d.sheets).filter(s=>s.folderId===id).length;
+    return `<div class="folder-card">
+      <div class="fc-icon">📁</div>
+      <div class="fc-name">${esc(f.name)}</div>
+      <div class="fc-meta">${sheetCount} sheet${sheetCount!==1?'s':''} · Created ${fmtDate(f.createdAt)}</div>
+      <div class="fc-actions">
+        <button class="fc-btn open" onclick="openFolder('${id}')">Open</button>
+        <button class="fc-btn del" onclick="deleteFolder('${id}',event)">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showNewFolderModal(){
+  document.getElementById('folderNameInput').value='';
+  openModal('modalFolder');
+  setTimeout(()=>document.getElementById('folderNameInput').focus(),200);
+}
+
+function confirmNewFolder(){
+  const name=document.getElementById('folderNameInput').value.trim();
+  if(!name)return;
+  const d=ensureDb();
+  const id='f_'+Date.now();
+  d.folders[id]={id,name,createdAt:new Date().toISOString()};
+  db(d);
+  closeModal('modalFolder');
+  openFolder(id);
+}
+
+function deleteFolder(id,e){
+  e.stopPropagation();
+  const d=ensureDb();
+  const name=d.folders[id]?.name||'this group';
+  const sheetCount=Object.values(d.sheets).filter(s=>s.folderId===id).length;
+  const warn=sheetCount>0?`\n\nThis will also delete ${sheetCount} saved sheet${sheetCount!==1?'s':''} inside it.`:'';
+  if(!confirm(`Delete "${name}"?${warn}`))return;
+  Object.keys(d.sheets).forEach(sid=>{if(d.sheets[sid].folderId===id)delete d.sheets[sid];});
+  delete d.folders[id];
+  db(d);
+  renderFolders();
+}
+
+function openFolder(id){
+  curFolderId=id;
+  const d=ensureDb();
+  const f=d.folders[id];
+  document.getElementById('sheetsTitle').textContent=f.name;
+  document.getElementById('navSub').textContent=f.name;
+  document.getElementById('navBtns').innerHTML=`<button class="nav-btn" onclick="goFolders()">&#8592; Groups</button><button class="nav-btn accent" onclick="newSheet()">+ New Sheet</button>`;
+  renderSheets();
+  showView('viewSheets');
+}
+
+// ── SHEETS ──
+function renderSheets(){
+  const d=ensureDb();
+  const sheets=Object.values(d.sheets).filter(s=>s.folderId===curFolderId).sort((a,b)=>b.savedAt.localeCompare(a.savedAt));
+  const list=document.getElementById('sheetList');
+  if(!sheets.length){
+    list.innerHTML=`<div class="empty-state"><div class="es-icon">📋</div><p>No sheets yet</p><small>Tap "+ New Sheet" to create this group's first class sheet</small></div>`;
+    return;
+  }
+  list.innerHTML=sheets.map(s=>`<div class="sheet-item">
+    <div class="si-info">
+      <div class="si-name">${esc(s.name)}</div>
+      <div class="si-meta">Saved ${fmtDate(s.savedAt)} · ${s.rowCount||12} participants</div>
+    </div>
+    <div class="si-actions">
+      <button class="btn btn-primary btn-sm" onclick="openSheet('${s.id}')">Open</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteSheet('${s.id}')">Delete</button>
+    </div>
+  </div>`).join('');
+}
+
+function newSheet(){
+  const d=ensureDb();
+  const f=d.folders[curFolderId];
+  const count=Object.values(d.sheets).filter(s=>s.folderId===curFolderId).length;
+  document.getElementById('sheetNameInput').value=`Week ${count+1} — ${new Date().toLocaleDateString('en-AU',{month:'short',year:'numeric'})}`;
+  openModal('modalSheet');
+  setTimeout(()=>document.getElementById('sheetNameInput').focus(),200);
+}
+
+function confirmNewSheet(){
+  const name=document.getElementById('sheetNameInput').value.trim();
+  if(!name)return;
+  const d=ensureDb();
+  const id='s_'+Date.now();
+  d.sheets[id]={id,folderId:curFolderId,name,savedAt:new Date().toISOString(),rowCount:12,rows:[]};
+  db(d);
+  closeModal('modalSheet');
+  curSheetId=id;
+  loadTableView(id);
+}
+
+function openSheet(id){
+  curSheetId=id;
+  loadTableView(id);
+}
+
+function deleteSheet(id){
+  const d=ensureDb();
+  const name=d.sheets[id]?.name||'this sheet';
+  if(!confirm(`Delete "${name}"?`))return;
+  delete d.sheets[id];
+  db(d);
+  if(curSheetId===id) curSheetId=null;
+  renderSheets();
+}
+
+function goSheets(){
+  curSheetId=null;
+  renderSheets();
+  const d=ensureDb();
+  const f=d.folders[curFolderId];
+  document.getElementById('navSub').textContent=f?.name||'';
+  document.getElementById('navBtns').innerHTML=`<button class="nav-btn" onclick="goFolders()">&#8592; Groups</button><button class="nav-btn accent" onclick="newSheet()">+ New Sheet</button>`;
+  showView('viewSheets');
+}
+
+// ── TABLE ──
+const FIELDS=['name','gp','ref','d1','f1','d2','f2','d3','f3','d4','f4','d5','f5','d6','f6','d7','f7','d8','f8'];
+
+function loadTableView(id){
+  const d=ensureDb();
+  const sh=d.sheets[id];
+  const f=d.folders[sh.folderId];
+  document.getElementById('tblFolderName').textContent='📁 '+esc(f?.name||'');
+  document.getElementById('tblSheetName').textContent=sh.name;
+  document.getElementById('navSub').textContent=sh.name;
+  document.getElementById('navBtns').innerHTML=`<button class="nav-btn" onclick="goSheets()">&#8592; Back</button><button class="nav-btn accent" onclick="saveSheet()">&#10003; Save</button>`;
+  initRows(sh.rowCount||12, sh.rows||[]);
+  showView('viewTable');
+}
+
+function makeRow(n,data){
+  data=data||{};
+  let h=`<td class="rnum">${n}</td>`;
+  FIELDS.forEach((f,i)=>{
+    const isLeft=f==='name'||f==='gp';
+    const isDateCol=f.startsWith('d')&&f!=='d'+'ref';
+    const sepCls=isDateCol?'sep-left':'';
+    h+=`<td${sepCls?` class="${sepCls}"`:''}><input type="text"${isLeft?' class="inp-left"':''} value="${esc(data[f])}" placeholder="" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="${f} row ${n}"></td>`;
+  });
+  const tr=document.createElement('tr');
+  tr.innerHTML=h;
+  return tr;
+}
+
+function initRows(count,rowsData){
+  const b=document.getElementById('tbody');
+  b.innerHTML='';
+  for(let i=1;i<=count;i++) b.appendChild(makeRow(i,rowsData[i-1]||{}));
+}
+
+function addRow(){
+  const b=document.getElementById('tbody');
+  const n=b.rows.length+1;
+  b.appendChild(makeRow(n,{}));
+  b.lastElementChild.querySelectorAll('input')[0].focus();
+}
+
+function removeRow(){
+  const b=document.getElementById('tbody');
+  if(b.rows.length>1) b.deleteRow(-1);
+}
+
+function getRows(){
+  return Array.from(document.getElementById('tbody').rows).map(r=>{
+    const ins=r.querySelectorAll('input');
+    const obj={};
+    FIELDS.forEach((f,i)=>obj[f]=ins[i]?.value||'');
+    return obj;
+  });
+}
+
+function saveSheet(){
+  if(!curSheetId)return;
+  const d=ensureDb();
+  const rows=getRows();
+  d.sheets[curSheetId].rows=rows;
+  d.sheets[curSheetId].rowCount=rows.length;
+  d.sheets[curSheetId].savedAt=new Date().toISOString();
+  db(d);
+  flash('Saved ✓');
+}
+
+// ── UTILS ──
+function fmtDate(iso){
+  try{return new Date(iso).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}catch(e){return ''}
+}
+
+function flash(msg){
+  const el=document.getElementById('statusMsg');
+  if(!el)return;
+  el.textContent=msg;
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.textContent='',3000);
+}
+
+// ── MODALS ──
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')});
+});
+document.getElementById('folderNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')confirmNewFolder();if(e.key==='Escape')closeModal('modalFolder')});
+document.getElementById('sheetNameInput').addEventListener('keydown',function(e){if(e.key==='Enter')confirmNewSheet();if(e.key==='Escape')closeModal('modalSheet')});
+
+// ── INIT ──
+goFolders();
+</script>
+</body>
+</html>
